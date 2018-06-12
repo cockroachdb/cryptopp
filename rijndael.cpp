@@ -1357,6 +1357,13 @@ size_t Rijndael::Dec::AdvancedProcessBlocks(const byte *inBlocks, const byte *xo
 
 #endif	// #if CRYPTOPP_BOOL_AESNI_INTRINSICS_AVAILABLE
 
+bool UsesAESNI() {
+#if CRYPTOPP_BOOL_AESNI_INTRINSICS_AVAILABLE
+	return HasAESNI();
+#endif
+	return false;
+}
+
 NAMESPACE_END
 
 #endif

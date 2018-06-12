@@ -18,6 +18,10 @@ DOCUMENTED_TYPEDEF(Rijndael, AES);
 typedef RijndaelEncryption AESEncryption;
 typedef RijndaelDecryption AESDecryption;
 
+// Return true iff CRYPTOPP_BOOL_AESNI_INTRINSICS_AVAILABLE is true
+// and the runtime HasAESNI() check returns true.
+bool UsesAESNI();
+
 NAMESPACE_END
 
 #endif
