@@ -61,7 +61,9 @@ extern "C"
 
 bool CpuId(word32 input, word32 output[4])
 {
-#if defined(CRYPTOPP_MS_STYLE_INLINE_ASSEMBLY)
+#if !defined(__x86_64__) && !defined(__i386__)
+	return false;
+#elif defined(CRYPTOPP_MS_STYLE_INLINE_ASSEMBLY)
     __try
 	{
 		__asm
@@ -88,44 +90,19 @@ bool CpuId(word32 input, word32 output[4])
 
 	return true;
 #else
-	// longjmp and clobber warnings. Volatile is required.
-	// http://github.com/weidai11/cryptopp/issues/24 and http://stackoverflow.com/q/7721854
-	volatile bool result = true;
-
-	volatile SigHandler oldHandler = signal(SIGILL, SigIllHandlerCPUID);
-	if (oldHandler == SIG_ERR)
-		return false;
-
-# ifndef __MINGW32__
-	volatile sigset_t oldMask;
-	if (sigprocmask(0, NULL, (sigset_t*)&oldMask))
-		return false;
-# endif
-
-	if (setjmp(s_jmpNoCPUID))
-		result = false;
-	else
-	{
-		asm volatile
-		(
-			// save ebx in case -fPIC is being used
-			// TODO: this might need an early clobber on EDI.
+	asm volatile
+	(
+		// save ebx in case -fPIC is being used
+		// TODO: this might need an early clobber on EDI.
 # if CRYPTOPP_BOOL_X32 || CRYPTOPP_BOOL_X64
-			"pushq %%rbx; cpuid; mov %%ebx, %%edi; popq %%rbx"
+		"pushq %%rbx; cpuid; mov %%ebx, %%edi; popq %%rbx"
 # else
-			"push %%ebx; cpuid; mov %%ebx, %%edi; pop %%ebx"
+		"push %%ebx; cpuid; mov %%ebx, %%edi; pop %%ebx"
 # endif
-			: "=a" (output[0]), "=D" (output[1]), "=c" (output[2]), "=d" (output[3])
-			: "a" (input), "c" (0)
-		);
-	}
-
-# ifndef __MINGW32__
-	sigprocmask(SIG_SETMASK, (sigset_t*)&oldMask, NULL);
-# endif
-
-	signal(SIGILL, oldHandler);
-	return result;
+		: "=a" (output[0]), "=D" (output[1]), "=c" (output[2]), "=d" (output[3])
+		: "a" (input), "c" (0)
+	);
+	return true;
 #endif
 }
 
